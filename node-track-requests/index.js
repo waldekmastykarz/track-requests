@@ -4,14 +4,19 @@ import fetch from 'node-fetch';
 import { bootstrap } from 'global-agent';
 bootstrap();
 
-async function codeLocationFetch(url, options = {}) {
-  const err = new Error();
-  const stack = err.stack.split('\n');
+function getCallerLocation(error) {
+  const stack = error.stack.split('\n');
+  // skip the error message and the current function
   const caller = stack[2].trim();
-  const regex = /at (\w+) \((file:\/\/\/[\w\/\-\.]+:\d+:\d+)\)/;
+  const regex = /at (\w+) \(([^)]+)\)/;
   const match = regex.exec(caller);
   const functionName = match[1];
   const filePathLocation = match[2];
+  return { functionName, filePathLocation };
+}
+
+async function codeLocationFetch(url, options = {}) {
+  const { functionName, filePathLocation } = getCallerLocation(new Error());
 
   const defaultHeaders = {
     'x-src-method': functionName,
